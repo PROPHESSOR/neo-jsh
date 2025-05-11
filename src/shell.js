@@ -121,6 +121,9 @@ function Shell (config) {
         }
       } else nextSegment();
     });
+    self.readline.on('close', function() {
+      process.stdout.write('\n');
+    });
     nextLine();
   }
   process.on('SIGINT', function () {
