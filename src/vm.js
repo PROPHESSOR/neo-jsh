@@ -38,6 +38,22 @@ function VM (debug) {
   context.process = process;
   context.Color = require('./util/color');
 
+  // Add console.log and print function implementations
+  context.console = {
+    log: function() {
+      var args = Array.prototype.slice.call(arguments);
+      var output = args.map(function(arg) {
+        return typeof arg === 'object' ? inspect(arg) : String(arg);
+      }).join(' ');
+      process.stdout.write(output + '\n');
+    }
+  };
+
+  context.print = function() {
+    var args = Array.prototype.slice.call(arguments);
+    process.stdout.write(args.join(' ') + '\n');
+  };
+
   (function loadModules (modules, ctx) {
     modules.forEach(function (v) {
       this[v] = require(v);
