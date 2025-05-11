@@ -22,6 +22,16 @@ function Shell (config) {
       script;
       args = process.argv.slice(2);
 
+  function handleError(e) {
+    if (process.env.JSH_SHOW_TRACEBACK === '1') {
+      console.error(e.message);
+      console.error(e.stack);
+    } else {
+      console.error('(Run process.env.JSH_SHOW_TRACEBACK=1 to see full traceback)');
+      console.error(e.message);
+    }
+  }
+
   (function parseArgs () {
     for (var i = 0; i < args.length; i++) {
       if (args[i] === '-d' || args[i] === '--debug') {
@@ -69,13 +79,13 @@ function Shell (config) {
     try {
       self.vm.exec(script, true);
     } catch (e) {
-      console.error(e.stack);
+      handleError(e);
     }
   } else if (command) {
     try {
       self.vm.exec(command);
     } catch (e) {
-      console.error(e.stack);
+      handleError(e);
     }
   } else if (!process.stdin.isTTY) {
     var stdin = '';
@@ -87,7 +97,7 @@ function Shell (config) {
       try {
         self.vm.exec(stdin, true);
       } catch (e) {
-        console.error(e.stack);
+        handleError(e);
       }
     });
   } else {
@@ -104,7 +114,7 @@ function Shell (config) {
             nextSegment();
             resume();
           } else {
-            console.error(e.stack);
+            handleError(e);
             nextLine();
           }
         }
