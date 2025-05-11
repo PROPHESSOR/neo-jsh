@@ -1,5 +1,4 @@
-var waitfor = require('./waitfor'),
-    child_process = require('child_process'),
+var child_process = require('child_process'),
     path = require('path'),
     fs = require('fs'),
     vm = require('vm'),
@@ -53,7 +52,7 @@ function VM (debug) {
       if (!/[a-z]/.test(v)) this[v] = process.env[v];
     }, ctx);
   })(context);
-  
+
   (function loadUsersModules (ctx) {
     var modPath = path.join(context.HOME, '.jsh', 'node_modules');
     if (fs.existsSync(modPath)) {
@@ -80,7 +79,7 @@ function VM (debug) {
       }
     }, commands);
   })(cmds, context);
-  
+
   var executableExists = require('./util/executable-exists')(context);
 
   this.debug = debug;
@@ -88,18 +87,29 @@ function VM (debug) {
   this.sandr = require('./util/sandr')(context);
 
   function execSync (cmd) {
-    var inherit = { stdio: 'inherit', env: context },
-        args = cmd.split(/\s+/),
-        subprocess;
+    const inherit = { stdio: 'inherit', env: context };
+    const args = cmd.split(/\s+/);
     cmd = args.splice(0, 1)[0];
+
     if (cmd && executableExists(removeParens(cmd))) {
-      process.title = path.basename(cmd);
-      if (process.stdin.isTTY) process.stdin.setRawMode(false);
-      subprocess = child_process.spawn('sh', ['-c', cmd + (args.length > 0 ? ' ': '') + args.join(' ') ], inherit);
-      waitfor(subprocess.pid);
-      if (process.stdin.isTTY) process.stdin.setRawMode(true);
-      subprocess.unref();
-      process.title = path.basename(process.argv[1]);
+        process.title = path.basename(cmd);
+        if (process.stdin.isTTY) process.stdin.setRawMode(false);
+
+        try {
+            // Spawn the child process and wait for it to complete
+            const subprocess = child_process.spawnSync('sh', ['-c', cmd + (args.length > 0 ? ' ' : '') + args.join(' ')], inherit);
+
+            if (subprocess.error) {
+                console.error(`Error executing command: ${subprocess.error.message}`);
+            } else if (subprocess.status !== 0) {
+                console.error(`Command exited with code: ${subprocess.status}`);
+            }
+
+            if (process.stdin.isTTY) process.stdin.setRawMode(true);
+            process.title = path.basename(process.argv[1]);
+        } catch (err) {
+            console.error(`Execution failed: ${err.message}`);
+        }
     }
   }
 }

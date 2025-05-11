@@ -1,1 +1,1 @@
-module.exports = require('./lib/shell');
+module.exports = require('./src/shell');

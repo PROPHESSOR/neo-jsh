@@ -1,5 +1,5 @@
 {
-  "name": "jsh",
+  "name": "neojsh",
   "version": "0.1.42",
   "description": "The JavaScript shell interpreter.",
   "main": "index.js",
@@ -7,24 +7,25 @@
     "jsh": "./bin/jsh"
   },
   "scripts": {
-    "install": "node-gyp rebuild",
     "test": "mocha"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/raypulver/jsh"
+    "url": "https://github.com/PROPHESSOR/neo-jsh"
   },
   "keywords": [
     "jsh",
+    "neo-jsh",
+    "neojsh",
     "sh",
     "shell"
   ],
-  "author": "Raymond Pulver IV & Hassan McKusick",
+  "author": "PROPHESSOR (forked from: Raymond Pulver IV & Hassan McKusick)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/raypulver/jsh/issues"
+    "url": "https://github.com/PROPHESSOR/neo-jsh/issues"
   },
-  "homepage": "https://github.com/raypulver/jsh",
+  "homepage": "https://github.com/PROPHESSOR/neo-jsh",
   "devDependencies": {
     "chai": "^1.10.0",
     "mocha": "^2.0.1"
