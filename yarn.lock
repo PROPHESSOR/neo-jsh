@@ -49,6 +49,11 @@ escape-string-regexp@1.0.2:
   resolved "https://registry.yarnpkg.com/escape-string-regexp/-/escape-string-regexp-1.0.2.tgz#4dbc2fe674e71949caf3fb2695ce7f2dc1d9a8d1"
   integrity sha512-cQpUid7bdTUnFin8S7BnNdOk+/eDqQmKgCANSyd/jAhrKEvxUvr9VQ8XZzXiOtest8NLfk3FSBZzwvemZNQ6Vg==
 
+freelist@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/freelist/-/freelist-1.0.3.tgz#006775509f3935701784d3ed2fc9f12c9df1bab2"
+  integrity sha512-Ji7fEnMdZDGbS5oXElpRJsn9jPvBR8h/037D3bzreNmS8809cISq/2D9//JbA/TaZmkkN8cmecXwmQHmM+NHhg==
+
 glob@3.2.11:
   version "3.2.11"
   resolved "https://registry.yarnpkg.com/glob/-/glob-3.2.11.tgz#4a973f635b9190f715d10987d5c00fd2815ebe3d"
