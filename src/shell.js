@@ -56,14 +56,14 @@ function Shell (config) {
   self.nextLine = nextLine;
 
   var complete = require('./completion')(self.vm.context);
-  
+
   (function createJshRC () {
     var rcPath = path.join(process.env.HOME, '.jshrc');
     if (!fs.existsSync(rcPath)) fs.writeFileSync(rcPath, fs.readFileSync(path.join(__dirname, 'jshrc-template.js')));
   })();
-  
+
   self.vm.execScript(path.join(self.vm.context.HOME, '.jshrc'));
-  prompter = /*self.vm.context.prompt || */ function () { return 'jsh>> '; };
+  prompter = self.vm.context.prompt || function () { return 'jsh>> '; };
 
   if (script) {
     try {
@@ -179,7 +179,7 @@ function Shell (config) {
 
 function error (msg) {
   if (msg) {
-    var jshErr = format('%s: \033[41mERR!\033[m', exeName),
+    var jshErr = format('%s: \x1b[41mERR!\x1b[m', exeName),
         jshErrLength = jshErr.length - 8;
     msg.split('\n').map(function (v) {
       if (v.substr(0, 4) === '    ') v = '  ' + v.trim();
