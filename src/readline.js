@@ -208,14 +208,18 @@ Interface.prototype._addHistory = function() {
   if (this.line.length === 0) return '';
 
   var hist;
-  if (this.history.length === 0 || this.history[0] !== this.line) {
-    this.history.unshift(this.line);
-    this.historySuggestions.addToHistory(this.line);
-    // Only store so many
-    if (this.history.length > this.kHistorySize) this.history.pop();
-    hist = this.history.slice(0, this.kHistorySize).reverse().join('\n') + '\n';
-    fs.writeFileSync(this.histPath, hist);
+  // Remove the command from history if it exists
+  var index = this.history.indexOf(this.line);
+  if (index !== -1) {
+    this.history.splice(index, 1);
   }
+  // Add the command to the beginning of history
+  this.history.unshift(this.line);
+  this.historySuggestions = new HistorySuggestions(this.history); // Recreate history suggestions with updated history
+  // Only store so many
+  if (this.history.length > this.kHistorySize) this.history.pop();
+  hist = this.history.slice(0, this.kHistorySize).reverse().join('\n') + '\n';
+  fs.writeFileSync(this.histPath, hist);
 
   this.historyIndex = -1;
   return this.history[0];
