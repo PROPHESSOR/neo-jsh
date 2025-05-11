@@ -28,7 +28,7 @@ function Shell (config) {
       console.error(Color.error(e.message));
       console.error(e.stack);
     } else {
-      console.error(Color.black('(Run process.env.JSH_SHOW_TRACEBACK=1 to see full traceback)'));
+      console.error(Color.darkBlack('(Run process.env.JSH_SHOW_TRACEBACK=1 to see full traceback)'));
       console.error(Color.error(e.message));
     }
   }
