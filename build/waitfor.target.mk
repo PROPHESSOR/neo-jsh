@@ -3,19 +3,30 @@
 TOOLSET := target
 TARGET := waitfor
 DEFS_Debug := \
+	'-DNODE_GYP_MODULE_NAME=waitfor' \
+	'-DUSING_UV_SHARED=1' \
+	'-DUSING_V8_SHARED=1' \
+	'-DV8_DEPRECATION_WARNINGS=1' \
+	'-DV8_DEPRECATION_WARNINGS' \
+	'-DV8_IMMINENT_DEPRECATION_WARNINGS' \
+	'-D_GLIBCXX_USE_CXX11_ABI=1' \
 	'-D_LARGEFILE_SOURCE' \
 	'-D_FILE_OFFSET_BITS=64' \
+	'-D__STDC_FORMAT_MACROS' \
+	'-DOPENSSL_NO_PINSHARED' \
+	'-DOPENSSL_THREADS' \
 	'-DBUILDING_NODE_EXTENSION' \
 	'-DDEBUG' \
-	'-D_DEBUG'
+	'-D_DEBUG' \
+	'-DV8_ENABLE_CHECKS'
 
 # Flags passed to all source files.
 CFLAGS_Debug := \
 	-fPIC \
+	-pthread \
 	-Wall \
 	-Wextra \
 	-Wno-unused-parameter \
-	-pthread \
 	-m64 \
 	-g \
 	-O0
@@ -26,29 +37,42 @@ CFLAGS_C_Debug :=
 # Flags passed to only C++ files.
 CFLAGS_CC_Debug := \
 	-fno-rtti \
-	-fno-exceptions
+	-fno-exceptions \
+	-std=gnu++17
 
 INCS_Debug := \
-	-I/root/.node-gyp/0.10.33/src \
-	-I/root/.node-gyp/0.10.33/deps/uv/include \
-	-I/root/.node-gyp/0.10.33/deps/v8/include
+	-I/home/ikliuiev/.cache/node-gyp/18.19.0/include/node \
+	-I/home/ikliuiev/.cache/node-gyp/18.19.0/src \
+	-I/home/ikliuiev/.cache/node-gyp/18.19.0/deps/openssl/config \
+	-I/home/ikliuiev/.cache/node-gyp/18.19.0/deps/openssl/openssl/include \
+	-I/home/ikliuiev/.cache/node-gyp/18.19.0/deps/uv/include \
+	-I/home/ikliuiev/.cache/node-gyp/18.19.0/deps/zlib \
+	-I/home/ikliuiev/.cache/node-gyp/18.19.0/deps/v8/include
 
 DEFS_Release := \
+	'-DNODE_GYP_MODULE_NAME=waitfor' \
+	'-DUSING_UV_SHARED=1' \
+	'-DUSING_V8_SHARED=1' \
+	'-DV8_DEPRECATION_WARNINGS=1' \
+	'-DV8_DEPRECATION_WARNINGS' \
+	'-DV8_IMMINENT_DEPRECATION_WARNINGS' \
+	'-D_GLIBCXX_USE_CXX11_ABI=1' \
 	'-D_LARGEFILE_SOURCE' \
 	'-D_FILE_OFFSET_BITS=64' \
+	'-D__STDC_FORMAT_MACROS' \
+	'-DOPENSSL_NO_PINSHARED' \
+	'-DOPENSSL_THREADS' \
 	'-DBUILDING_NODE_EXTENSION'
 
 # Flags passed to all source files.
 CFLAGS_Release := \
 	-fPIC \
+	-pthread \
 	-Wall \
 	-Wextra \
 	-Wno-unused-parameter \
-	-pthread \
 	-m64 \
-	-O2 \
-	-fno-strict-aliasing \
-	-fno-tree-vrp \
+	-O3 \
 	-fno-omit-frame-pointer
 
 # Flags passed to only C files.
@@ -57,12 +81,17 @@ CFLAGS_C_Release :=
 # Flags passed to only C++ files.
 CFLAGS_CC_Release := \
 	-fno-rtti \
-	-fno-exceptions
+	-fno-exceptions \
+	-std=gnu++17
 
 INCS_Release := \
-	-I/root/.node-gyp/0.10.33/src \
-	-I/root/.node-gyp/0.10.33/deps/uv/include \
-	-I/root/.node-gyp/0.10.33/deps/v8/include
+	-I/home/ikliuiev/.cache/node-gyp/18.19.0/include/node \
+	-I/home/ikliuiev/.cache/node-gyp/18.19.0/src \
+	-I/home/ikliuiev/.cache/node-gyp/18.19.0/deps/openssl/config \
+	-I/home/ikliuiev/.cache/node-gyp/18.19.0/deps/openssl/openssl/include \
+	-I/home/ikliuiev/.cache/node-gyp/18.19.0/deps/uv/include \
+	-I/home/ikliuiev/.cache/node-gyp/18.19.0/deps/zlib \
+	-I/home/ikliuiev/.cache/node-gyp/18.19.0/deps/v8/include
 
 OBJS := \
 	$(obj).target/$(TARGET)/src/waitfor.o

@@ -41,33 +41,27 @@ all_deps :=
 
 
 CC.target ?= $(CC)
-CFLAGS.target ?= $(CFLAGS)
+CFLAGS.target ?= $(CPPFLAGS) $(CFLAGS)
 CXX.target ?= $(CXX)
-CXXFLAGS.target ?= $(CXXFLAGS)
+CXXFLAGS.target ?= $(CPPFLAGS) $(CXXFLAGS)
 LINK.target ?= $(LINK)
 LDFLAGS.target ?= $(LDFLAGS)
 AR.target ?= $(AR)
+PLI.target ?= pli
 
 # C++ apps need to be linked with g++.
-#
-# Note: flock is used to seralize linking. Linking is a memory-intensive
-# process so running parallel links can often lead to thrashing.  To disable
-# the serialization, override LINK via an envrionment variable as follows:
-#
-#   export LINK=g++
-#
-# This will allow make to invoke N linker processes as specified in -jN.
-LINK ?= flock $(builddir)/linker.lock $(CXX.target)
+LINK ?= $(CXX.target)
 
 # TODO(evan): move all cross-compilation logic to gyp-time so we don't need
 # to replicate this environment fallback in make as well.
 CC.host ?= gcc
-CFLAGS.host ?=
+CFLAGS.host ?= $(CPPFLAGS_host) $(CFLAGS_host)
 CXX.host ?= g++
-CXXFLAGS.host ?=
+CXXFLAGS.host ?= $(CPPFLAGS_host) $(CXXFLAGS_host)
 LINK.host ?= $(CXX.host)
-LDFLAGS.host ?=
+LDFLAGS.host ?= $(LDFLAGS_host)
 AR.host ?= ar
+PLI.host ?= pli
 
 # Define a dir function that can handle spaces.
 # http://www.gnu.org/software/make/manual/make.html#Syntax-of-Functions
@@ -129,17 +123,20 @@ endef
 # - quiet_cmd_foo is the brief-output summary of the command.
 
 quiet_cmd_cc = CC($(TOOLSET)) $@
-cmd_cc = $(CC.$(TOOLSET)) $(GYP_CFLAGS) $(DEPFLAGS) $(CFLAGS.$(TOOLSET)) -c -o $@ $<
+cmd_cc = $(CC.$(TOOLSET)) -o $@ $< $(GYP_CFLAGS) $(DEPFLAGS) $(CFLAGS.$(TOOLSET)) -c
 
 quiet_cmd_cxx = CXX($(TOOLSET)) $@
-cmd_cxx = $(CXX.$(TOOLSET)) $(GYP_CXXFLAGS) $(DEPFLAGS) $(CXXFLAGS.$(TOOLSET)) -c -o $@ $<
+cmd_cxx = $(CXX.$(TOOLSET)) -o $@ $< $(GYP_CXXFLAGS) $(DEPFLAGS) $(CXXFLAGS.$(TOOLSET)) -c
 
 quiet_cmd_touch = TOUCH $@
 cmd_touch = touch $@
 
 quiet_cmd_copy = COPY $@
 # send stderr to /dev/null to ignore messages when linking directories.
-cmd_copy = rm -rf "$@" && cp -af "$<" "$@"
+cmd_copy = ln -f "$<" "$@" 2>/dev/null || (rm -rf "$@" && cp -af "$<" "$@")
+
+quiet_cmd_symlink = SYMLINK $@
+cmd_symlink = ln -sf "$<" "$@"
 
 quiet_cmd_alink = AR($(TOOLSET)) $@
 cmd_alink = rm -f $@ && $(AR.$(TOOLSET)) crs $@ $(filter %.o,$^)
@@ -151,7 +148,32 @@ cmd_alink_thin = rm -f $@ && $(AR.$(TOOLSET)) crsT $@ $(filter %.o,$^)
 # special "figure out circular dependencies" flags around the entire
 # input list during linking.
 quiet_cmd_link = LINK($(TOOLSET)) $@
-cmd_link = $(LINK.$(TOOLSET)) $(GYP_LDFLAGS) $(LDFLAGS.$(TOOLSET)) -o $@ -Wl,--start-group $(LD_INPUTS) -Wl,--end-group $(LIBS)
+cmd_link = $(LINK.$(TOOLSET)) -o $@ $(GYP_LDFLAGS) $(LDFLAGS.$(TOOLSET)) -Wl,--start-group $(LD_INPUTS) $(LIBS) -Wl,--end-group
+
+# Note: this does not handle spaces in paths
+define xargs
+  $(1) $(word 1,$(2))
+$(if $(word 2,$(2)),$(call xargs,$(1),$(wordlist 2,$(words $(2)),$(2))))
+endef
+
+define write-to-file
+  @: >$(1)
+$(call xargs,@printf "%s\n" >>$(1),$(2))
+endef
+
+OBJ_FILE_LIST := ar-file-list
+
+define create_archive
+        rm -f $(1) $(1).$(OBJ_FILE_LIST); mkdir -p `dirname $(1)`
+        $(call write-to-file,$(1).$(OBJ_FILE_LIST),$(filter %.o,$(2)))
+        $(AR.$(TOOLSET)) crs $(1) @$(1).$(OBJ_FILE_LIST)
+endef
+
+define create_thin_archive
+        rm -f $(1) $(OBJ_FILE_LIST); mkdir -p `dirname $(1)`
+        $(call write-to-file,$(1).$(OBJ_FILE_LIST),$(filter %.o,$(2)))
+        $(AR.$(TOOLSET)) crsT $(1) @$(1).$(OBJ_FILE_LIST)
+endef
 
 # We support two kinds of shared objects (.so):
 # 1) shared_library, which is just bundling together many dependent libraries
@@ -170,10 +192,10 @@ cmd_link = $(LINK.$(TOOLSET)) $(GYP_LDFLAGS) $(LDFLAGS.$(TOOLSET)) -o $@ -Wl,--s
 # - Set SONAME to the library filename so our binaries don't reference
 # the local, absolute paths used on the link command-line.
 quiet_cmd_solink = SOLINK($(TOOLSET)) $@
-cmd_solink = $(LINK.$(TOOLSET)) -shared $(GYP_LDFLAGS) $(LDFLAGS.$(TOOLSET)) -Wl,-soname=$(@F) -o $@ -Wl,--whole-archive $(LD_INPUTS) -Wl,--no-whole-archive $(LIBS)
+cmd_solink = $(LINK.$(TOOLSET)) -o $@ -shared $(GYP_LDFLAGS) $(LDFLAGS.$(TOOLSET)) -Wl,-soname=$(@F) -Wl,--whole-archive $(LD_INPUTS) -Wl,--no-whole-archive $(LIBS)
 
 quiet_cmd_solink_module = SOLINK_MODULE($(TOOLSET)) $@
-cmd_solink_module = $(LINK.$(TOOLSET)) -shared $(GYP_LDFLAGS) $(LDFLAGS.$(TOOLSET)) -Wl,-soname=$(@F) -o $@ -Wl,--start-group $(filter-out FORCE_DO_CMD, $^) -Wl,--end-group $(LIBS)
+cmd_solink_module = $(LINK.$(TOOLSET)) -o $@ -shared $(GYP_LDFLAGS) $(LDFLAGS.$(TOOLSET)) -Wl,-soname=$(@F) -Wl,--start-group $(filter-out FORCE_DO_CMD, $^) -Wl,--end-group $(LIBS)
 
 
 # Define an escape_quotes function to escape single quotes.
@@ -276,9 +298,9 @@ $(obj).$(TOOLSET)/%.o: $(srcdir)/%.cpp FORCE_DO_CMD
 	@$(call do_cmd,cxx,1)
 $(obj).$(TOOLSET)/%.o: $(srcdir)/%.cxx FORCE_DO_CMD
 	@$(call do_cmd,cxx,1)
-$(obj).$(TOOLSET)/%.o: $(srcdir)/%.S FORCE_DO_CMD
-	@$(call do_cmd,cc,1)
 $(obj).$(TOOLSET)/%.o: $(srcdir)/%.s FORCE_DO_CMD
+	@$(call do_cmd,cc,1)
+$(obj).$(TOOLSET)/%.o: $(srcdir)/%.S FORCE_DO_CMD
 	@$(call do_cmd,cc,1)
 
 # Try building from generated source, too.
@@ -290,9 +312,9 @@ $(obj).$(TOOLSET)/%.o: $(obj).$(TOOLSET)/%.cpp FORCE_DO_CMD
 	@$(call do_cmd,cxx,1)
 $(obj).$(TOOLSET)/%.o: $(obj).$(TOOLSET)/%.cxx FORCE_DO_CMD
 	@$(call do_cmd,cxx,1)
-$(obj).$(TOOLSET)/%.o: $(obj).$(TOOLSET)/%.S FORCE_DO_CMD
-	@$(call do_cmd,cc,1)
 $(obj).$(TOOLSET)/%.o: $(obj).$(TOOLSET)/%.s FORCE_DO_CMD
+	@$(call do_cmd,cc,1)
+$(obj).$(TOOLSET)/%.o: $(obj).$(TOOLSET)/%.S FORCE_DO_CMD
 	@$(call do_cmd,cc,1)
 
 $(obj).$(TOOLSET)/%.o: $(obj)/%.c FORCE_DO_CMD
@@ -303,9 +325,9 @@ $(obj).$(TOOLSET)/%.o: $(obj)/%.cpp FORCE_DO_CMD
 	@$(call do_cmd,cxx,1)
 $(obj).$(TOOLSET)/%.o: $(obj)/%.cxx FORCE_DO_CMD
 	@$(call do_cmd,cxx,1)
-$(obj).$(TOOLSET)/%.o: $(obj)/%.S FORCE_DO_CMD
-	@$(call do_cmd,cc,1)
 $(obj).$(TOOLSET)/%.o: $(obj)/%.s FORCE_DO_CMD
+	@$(call do_cmd,cc,1)
+$(obj).$(TOOLSET)/%.o: $(obj)/%.S FORCE_DO_CMD
 	@$(call do_cmd,cc,1)
 
 
@@ -316,8 +338,8 @@ ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
 endif
 
 quiet_cmd_regen_makefile = ACTION Regenerating $@
-cmd_regen_makefile = cd $(srcdir); /usr/local/lib/node_modules/node-gyp/gyp/gyp_main.py -fmake --ignore-environment "--toplevel-dir=." -I/usr/local/workspace/jsh/build/config.gypi -I/usr/local/lib/node_modules/node-gyp/addon.gypi -I/root/.node-gyp/0.10.33/common.gypi "--depth=." "-Goutput_dir=." "--generator-output=build" "-Dlibrary=shared_library" "-Dvisibility=default" "-Dnode_root_dir=/root/.node-gyp/0.10.33" "-Dmodule_root_dir=/usr/local/workspace/jsh" binding.gyp
-Makefile: $(srcdir)/../../lib/node_modules/node-gyp/addon.gypi $(srcdir)/build/config.gypi $(srcdir)/binding.gyp $(srcdir)/../../../../root/.node-gyp/0.10.33/common.gypi
+cmd_regen_makefile = cd $(srcdir); /home/ikliuiev/.local/share/nvm/v18.19.0/lib/node_modules/npm/node_modules/node-gyp/gyp/gyp_main.py -fmake --ignore-environment "-Dlibrary=shared_library" "-Dvisibility=default" "-Dnode_root_dir=/home/ikliuiev/.cache/node-gyp/18.19.0" "-Dnode_gyp_dir=/home/ikliuiev/.local/share/nvm/v18.19.0/lib/node_modules/npm/node_modules/node-gyp" "-Dnode_lib_file=/home/ikliuiev/.cache/node-gyp/18.19.0/<(target_arch)/node.lib" "-Dmodule_root_dir=/home/ikliuiev/Projects/neo-jsh" "-Dnode_engine=v8" "--depth=." "-Goutput_dir=." "--generator-output=build" -I/home/ikliuiev/Projects/neo-jsh/build/config.gypi -I/home/ikliuiev/.local/share/nvm/v18.19.0/lib/node_modules/npm/node_modules/node-gyp/addon.gypi -I/home/ikliuiev/.cache/node-gyp/18.19.0/include/node/common.gypi "--toplevel-dir=." binding.gyp
+Makefile: $(srcdir)/../../.local/share/nvm/v18.19.0/lib/node_modules/npm/node_modules/node-gyp/addon.gypi $(srcdir)/build/config.gypi $(srcdir)/binding.gyp $(srcdir)/../../.cache/node-gyp/18.19.0/include/node/common.gypi
 	$(call do_cmd,regen_makefile)
 
 # "all" is a concatenation of the "all" targets from all the included
