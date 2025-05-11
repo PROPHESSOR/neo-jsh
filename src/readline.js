@@ -85,6 +85,10 @@ function Interface(input, output, completer, shell, terminal) {
       return;
     }
     self._ttyWrite(s, key);
+    // Update ghost suggestions after each keypress
+    if (self.terminal && !key?.ctrl && !key?.meta) {
+      self._updateGhostSuggestions();
+    }
   }
 
   function onresize() {
@@ -227,7 +231,10 @@ Interface.prototype._refreshLine = function() {
   this.ghostSuggestion.setSuggestion(suggestion);
 
   // line length
-  var line = this._prompt + this.line + this.ghostSuggestion.getDisplaySuggestion();
+  var line = this._prompt + this.line;
+  if (this.tabbed < 0) {  // Only show ghost suggestion if not in tab completion mode
+    line += this.ghostSuggestion.getDisplaySuggestion();
+  }
   var lineLength = line.length;
   var lineCols = lineLength % columns;
   var lineRows = (lineLength - lineCols) / columns;
@@ -356,6 +363,20 @@ Interface.prototype._insertString = function(c) {
   }
 };
 
+Interface.prototype._updateGhostSuggestions = function() {
+  var self = this;
+  if (this.paused || this.tabbed >= 0) return; // Don't update ghost suggestions during tab completion
+
+  // Get history suggestions
+  const suggestion = this.historySuggestions.getSuggestion(this.line);
+  if (suggestion) {
+    this.ghostSuggestion.setSuggestion(suggestion);
+  } else {
+    this.ghostSuggestion.clear();
+  }
+  this._refreshLine();
+};
+
 Interface.prototype._tabComplete = function() {
   var self = this;
 
@@ -371,11 +392,16 @@ Interface.prototype._tabComplete = function() {
       self._insertString(self.lastCompletions[self.tabbed]);
     }
   } else {
+    // Temporarily clear ghost suggestions when showing tab completions
+    var hadGhostSuggestion = self.ghostSuggestion.isAvailable();
+    if (hadGhostSuggestion) {
+      self.ghostSuggestion.clear();
+    }
+
     self.completer(self.line.slice(0, self.cursor), function(err, rv) {
       self.resume();
 
       if (err) {
-        // XXX Log it somewhere?
         return;
       }
 
@@ -388,6 +414,7 @@ Interface.prototype._tabComplete = function() {
           self._insertString(completions[0].slice(completeOn.length));
           self.tabbed = -2;
         } else {
+          // Show completion list
           var width = completions.reduce(function(a, b) {
             return a.length > b.length ? a : b;
           }).length + 2;  // 2 space padding
@@ -403,14 +430,6 @@ Interface.prototype._tabComplete = function() {
             }
           }
           handleGroup(self, group, width, maxColumns);
-
-          // If there is a common prefix to all matches, then apply that
-          // portion.
-          var f = completions.filter(function(e) { if (e) return e; });
-          var prefix = commonPrefix(f);
-          if (prefix.length > completeOn.length) {
-            self._insertString(prefix.slice(completeOn.length));
-          }
 
         }
         self._refreshLine();
@@ -613,6 +632,7 @@ Interface.prototype._ttyWrite = function(s, key) {
   key = key || {};
   var lastTabbed = this.tabbed;
   this.tabbed = -2;
+  // this.tabbed = (key.name === 'tab') ? (lastTabbed === -2 ? -1 : lastTabbed) : -2;
   // Ignore escape key - Fixes #2876
   if (key.name == 'escape') return;
 
@@ -795,7 +815,6 @@ Interface.prototype._ttyWrite = function(s, key) {
         break;
 
       case 'tab': // tab completion
-        this.tabbed = lastTabbed;
         this._tabComplete();
         break;
 
