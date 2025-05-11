@@ -5,6 +5,8 @@ var util = require('util'),
     path = require('path');
 var inherits = require('util').inherits;
 var EventEmitter = require('events').EventEmitter;
+var GhostSuggestion = require('./util/ghost-suggestion');
+var HistorySuggestions = require('./util/history-suggestions');
 
 
 exports.createInterface = function(input, output, completer, shell, terminal) {
@@ -24,6 +26,8 @@ function Interface(input, output, completer, shell, terminal) {
   }
 
   this._sawReturn = false;
+  this.ghostSuggestion = new GhostSuggestion();
+  this.historySuggestions = new HistorySuggestions();
 
   EventEmitter.call(this);
 
@@ -73,6 +77,13 @@ function Interface(input, output, completer, shell, terminal) {
   }
 
   function onkeypress(s, key) {
+    if (key && key.name === 'right' && self.ghostSuggestion.isAvailable()) {
+      // Accept suggestion on right arrow
+      self.line = self.ghostSuggestion.accept();
+      self.cursor = self.line.length;
+      self._refreshLine();
+      return;
+    }
     self._ttyWrite(s, key);
   }
 
@@ -114,6 +125,7 @@ function Interface(input, output, completer, shell, terminal) {
     if (fs.existsSync(this.histPath)) {
       this.history = fs.readFileSync(this.histPath, 'utf8').split('\n');
       this.history = this.history.slice(0, this.history.length - 1).reverse();
+      this.historySuggestions = new HistorySuggestions(this.history);
     }
 
     output.on('resize', onresize);
@@ -194,6 +206,7 @@ Interface.prototype._addHistory = function() {
   var hist;
   if (this.history.length === 0 || this.history[0] !== this.line) {
     this.history.unshift(this.line);
+    this.historySuggestions.addToHistory(this.line);
     // Only store so many
     if (this.history.length > this.kHistorySize) this.history.pop();
     hist = this.history.slice(0, this.kHistorySize).reverse().join('\n') + '\n';
@@ -208,8 +221,13 @@ Interface.prototype._addHistory = function() {
 Interface.prototype._refreshLine = function() {
   var columns = this.columns;
 
+  // Update ghost suggestion
+  this.ghostSuggestion.saveState(this.line, this.cursor);
+  const suggestion = this.historySuggestions.getSuggestion(this.line);
+  this.ghostSuggestion.setSuggestion(suggestion);
+
   // line length
-  var line = this._prompt + this.line;
+  var line = this._prompt + this.line + this.ghostSuggestion.getDisplaySuggestion();
   var lineLength = line.length;
   var lineCols = lineLength % columns;
   var lineRows = (lineLength - lineCols) / columns;
