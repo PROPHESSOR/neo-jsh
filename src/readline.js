@@ -234,38 +234,50 @@ Interface.prototype._refreshLine = function() {
   const suggestion = this.historySuggestions.getSuggestion(this.line);
   this.ghostSuggestion.setSuggestion(suggestion);
 
-  // line length
+  // Compose the line to display
   var line = this._prompt + this.line;
-  if (this.tabbed < 0) {  // Only show ghost suggestion if not in tab completion mode
+  if (this.tabbed < 0) {
     line += this.ghostSuggestion.getDisplaySuggestion();
   }
-  var lineLength = line.length;
+
+  // Remove ANSI codes for accurate length
+  var strippedLine = line.replace(/\x1b\\[[0-9;]*m/g, '');
+  var lineLength = strippedLine.length;
   var lineCols = lineLength % columns;
-  var lineRows = (lineLength - lineCols) / columns;
+  var lineRows = Math.floor(lineLength / columns);
 
-  // cursor position
-  var cursorPos = this._getCursorPos();
-
-  // first move to the bottom of the current line, based on cursor pos
+  // How many rows did the previous line occupy?
   var prevRows = this.prevRows || 0;
-  if (prevRows > 0) {
-    exports.moveCursor(this.output, 0, -prevRows);
+
+  // Always clear the max of previous and current rows
+  var maxRows = Math.max(prevRows, lineRows + 1);
+
+  // Move up to the first row of the previous input
+  if (maxRows > 1) {
+    exports.moveCursor(this.output, 0, -(maxRows - 1));
   }
 
-  // Cursor to left edge.
+  // Clear all lines the input could occupy
+  for (var i = 0; i < maxRows; i++) {
+    exports.cursorTo(this.output, 0); // Always move to the leftmost column
+    exports.clearLine(this.output, 0);
+    if (i < maxRows - 1) exports.moveCursor(this.output, 0, 1);
+  }
+
+  // Move cursor back to the top line and leftmost column
+  if (maxRows > 1) exports.moveCursor(this.output, 0, -(maxRows - 1));
   exports.cursorTo(this.output, 0);
-  // erase data
-  exports.clearScreenDown(this.output);
 
   // Write the prompt and the current buffer content.
   this.output.write(line);
 
-  // Force terminal to allocate a new line
+  // Force terminal to allocate a new line if at the end
   if (lineCols === 0) {
     this.output.write(' ');
   }
 
   // Move cursor to original position.
+  var cursorPos = this._getCursorPos();
   exports.cursorTo(this.output, cursorPos.cols);
 
   var diff = lineRows - cursorPos.rows;
@@ -273,7 +285,7 @@ Interface.prototype._refreshLine = function() {
     exports.moveCursor(this.output, 0, -diff);
   }
 
-  this.prevRows = cursorPos.rows;
+  this.prevRows = lineRows + 1; // +1 for the current line
 };
 
 
