@@ -36,6 +36,7 @@ function VM (debug) {
       preload = ['assert', 'buffer', 'child_process', 'cluster', 'crypto', 'dgram', 'dns', 'domain', 'events', 'freelist', 'fs', 'http', 'https', 'net', 'os', 'path', 'punycode', 'querystring', 'readline', 'stream', 'string_decoder', 'timers', 'tls', 'tty', 'url', 'util', 'vm', 'zlib'];
 
   context.process = process;
+  context.Color = require('./util/color');
 
   (function loadModules (modules, ctx) {
     modules.forEach(function (v) {

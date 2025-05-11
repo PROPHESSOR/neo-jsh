@@ -14,9 +14,9 @@ module.exports = function (context) {
     parts = /(^.*)=(.*$)/.exec(v);
     if (parts) {
       if (subparts = /\*(.*$)/.exec(parts[1])) {
-        exts[subparts[1]] = '\033[' + parts[2] + 'm';
-      } else if (parts[1] === 'di') dirColor = '\033[' + parts[2] + 'm';
-      else if (parts[1] === 'ex') exeColor = '\033[' + parts[2] + 'm';
+        exts[subparts[1]] = '\x1b[' + parts[2] + 'm';
+      } else if (parts[1] === 'di') dirColor = '\x1b[' + parts[2] + 'm';
+      else if (parts[1] === 'ex') exeColor = '\x1b[' + parts[2] + 'm';
     }
   });
   return function printPossibles (possibles) {
@@ -61,7 +61,7 @@ module.exports = function (context) {
           write('\n');
           cursor = 0;
         }
-        write(dirColor + possibles.directories[0] + '\033[m/' + times(' ', max));
+        write(dirColor + possibles.directories[0] + '\x1b[m/' + times(' ', max));
         cursor += possibles.directories[0].length + max + 1;
         possibles.directories.splice(0, 1);
       }
@@ -71,7 +71,7 @@ module.exports = function (context) {
           write('\n');
           cursor = 0;
         }
-        write(exeColor + possibles.executables[0] + '\033[m' + times(' ', max));
+        write(exeColor + possibles.executables[0] + '\x1b[m' + times(' ', max));
         cursor += possibles.executables[0].length + max;
         possibles.executables.splice(0, 1);
       }
@@ -83,7 +83,7 @@ module.exports = function (context) {
           write('\n');
           cursor = 0;
         }
-        write(fileColor + possibles.files[0] + '\033[m' + times(' ', max));
+        write(fileColor + possibles.files[0] + '\x1b[m' + times(' ', max));
         cursor += possibles.files[0].length + max;
         possibles.files.splice(0, 1);
       }
@@ -100,7 +100,7 @@ module.exports = function (context) {
             if (max + possibles.js[0][0].length + 1 + cursor > process.stdout.columns) {
              write('\n');
              cursor = 0;
-            } 
+            }
             write(possibles.js[0][0] + times(' ', max));
             cursor += possibles.js[0][0].length + max;
             possibles.js[0].splice(0, 1);

@@ -5,7 +5,8 @@ var child_process = require('child_process'),
     emitter = require('events').EventEmitter;
 
 var readline = require('./readline'),
-    times = require('./util/string-multiply');
+    times = require('./util/string-multiply'),
+    Color = require('./util/color');
 
 var exeName = path.basename(process.argv[1]);
 
@@ -24,11 +25,11 @@ function Shell (config) {
 
   function handleError(e) {
     if (process.env.JSH_SHOW_TRACEBACK === '1') {
-      console.error(e.message);
+      console.error(Color.error(e.message));
       console.error(e.stack);
     } else {
-      console.error('(Run process.env.JSH_SHOW_TRACEBACK=1 to see full traceback)');
-      console.error(e.message);
+      console.error(Color.black('(Run process.env.JSH_SHOW_TRACEBACK=1 to see full traceback)'));
+      console.error(Color.error(e.message));
     }
   }
 
@@ -189,7 +190,7 @@ function Shell (config) {
 
 function error (msg) {
   if (msg) {
-    var jshErr = format('%s: \x1b[41mERR!\x1b[m', exeName),
+    var jshErr = format('%s: %s', exeName, Color.error('ERR!')),
         jshErrLength = jshErr.length - 8;
     msg.split('\n').map(function (v) {
       if (v.substr(0, 4) === '    ') v = '  ' + v.trim();

@@ -1,5 +1,5 @@
 prompt = function () {
-    return '[' + USER + '@' + os.hostname() + ':' + process.cwd().replace(HOME, '~') + ']' + (USER === 'root' ? '#': '$') + ' ';
+    return Color.bold(Color.green(USER + '@' + os.hostname())) + ':' + Color.bold(Color.cyan(process.cwd().replace(HOME, '~'))) + (USER === 'root' ? Color.bold(Color.red('#')): Color.bold(Color.green('$'))) + ' ';
 }
 child_process.exec('ls --color=auto', function (err, stdout, stderr) {
   if (!stderr) alias ls='ls --color=auto'
