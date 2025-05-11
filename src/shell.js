@@ -70,7 +70,7 @@ function Shell (config) {
 
   (function createJshRC () {
     var rcPath = path.join(process.env.HOME, '.jshrc');
-    if (!fs.existsSync(rcPath)) fs.writeFileSync(rcPath, fs.readFileSync(path.join(__dirname, 'jshrc-template.js')));
+    if (!fs.existsSync(rcPath)) fs.writeFileSync(rcPath, fs.readFileSync(path.join(__dirname, 'jshrc.template')));
   })();
 
   self.vm.execScript(path.join(self.vm.context.HOME, '.jshrc'));
