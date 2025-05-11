@@ -29,22 +29,22 @@ function F () {
   this.hotel = 'woop';
 }
 
-var toCamelCase = require('../lib/util/to-camel-case'),
-    substituteVars = require('../lib/util/substitute-vars'),
-    substituteVarsWithContext = require('../lib/util/substitute-vars-with-context')(context),
-    addNewlines = require('../lib/util/add-newlines'),
-    escapeShell = require('../lib/util/escape-shell'),
-    stripSemicolon = require('../lib/util/strip-semicolon'),
-    breakUpCommand = require('../lib/util/break-up-command'),
-    unescapeAndQuote = require('../lib/util/unescape-and-quote'),
-    inJavaScript = require('../lib/util/in-javascript'),
-    extractJs = require('../lib/util/extract-js'),
-    extractPureJs = require('../lib/util/extract-pure-js'),
-    firstWord = require('../lib/util/first-word'),
-    substituteTilde = require('../lib/util/substitute-tilde')(context),
-    sandr = require('../lib/util/sandr')(context),
-    substituteAliases = require('../lib/util/substitute-aliases')(context),
-    allKeysStartingWith = require('../lib/util/all-keys-starting-with');
+var toCamelCase = require('../src/util/to-camel-case'),
+    substituteVars = require('../src/util/substitute-vars'),
+    substituteVarsWithContext = require('../src/util/substitute-vars-with-context')(context),
+    addNewlines = require('../src/util/add-newlines'),
+    escapeShell = require('../src/util/escape-shell'),
+    stripSemicolon = require('../src/util/strip-semicolon'),
+    breakUpCommand = require('../src/util/break-up-command'),
+    unescapeAndQuote = require('../src/util/unescape-and-quote'),
+    inJavaScript = require('../src/util/in-javascript'),
+    extractJs = require('../src/util/extract-js'),
+    extractPureJs = require('../src/util/extract-pure-js'),
+    firstWord = require('../src/util/first-word'),
+    substituteTilde = require('../src/util/substitute-tilde')(context),
+    sandr = require('../src/util/sandr')(context),
+    substituteAliases = require('../src/util/substitute-aliases')(context),
+    allKeysStartingWith = require('../src/util/all-keys-starting-with');
 
 describe('jsh utility modules', function () {
   it('should convert to camel-case', function () {

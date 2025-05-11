@@ -7,6 +7,7 @@
     "jsh": "./bin/jsh"
   },
   "scripts": {
+    "start": "node bin/jsh",
     "test": "mocha"
   },
   "repository": {
