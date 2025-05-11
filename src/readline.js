@@ -241,7 +241,7 @@ Interface.prototype._refreshLine = function() {
   }
 
   // Remove ANSI codes for accurate length
-  var strippedLine = line.replace(/\x1b\\[[0-9;]*m/g, '');
+  var strippedLine = line.replace(/\x1b\[[0-9;]*m/g, '');
   var lineLength = strippedLine.length;
   var lineCols = lineLength % columns;
   var lineRows = Math.floor(lineLength / columns);
