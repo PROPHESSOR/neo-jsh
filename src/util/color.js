@@ -60,7 +60,7 @@ const Color = {};
 
 Object.keys(codes).forEach(key => {
   Color[key] = function(str) {
-    if (!isColorSupported) return str;
+    if (!isColorSupported) return str || '';
     if (!str) return `\x1b[${codes[key]}m`;
     return `\x1b[${codes[key]}m${str}\x1b[0m`;
   };
